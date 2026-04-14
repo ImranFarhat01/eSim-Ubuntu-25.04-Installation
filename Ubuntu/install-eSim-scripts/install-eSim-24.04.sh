@@ -15,8 +15,6 @@
 #       AUTHORS: Fahim Khan, Rahul Paknikar, Saurabh Bansode,
 #                Sumanto Kar, Partha Singha Roy, Harsha Narayana P, 
 #                Jayanth Tatineni, Anshul Verma
-#       MENTORS: Sumanto Kar, Varad Patil, Shanti Priya K, Aditya M
-#       INTERNS: Akshay Rukade, Haripriyan R
 #  ORGANIZATION: eSim Team, FOSSEE, IIT Bombay
 #       CREATED: Wednesday 15 July 2015 15:26
 #      REVISION: Sunday 25 May 2025 17:40
@@ -87,45 +85,22 @@ function installSky130Pdk
 {
 
     echo "Installing SKY130 PDK......................"
-
     
+    # Extract SKY130 PDK
+    tar -xJf library/sky130_fd_pr.tar.xz
+
     # Remove any previous sky130-fd-pdr instance, if any
     sudo rm -rf /usr/share/local/sky130_fd_pr
-    #installing sky130
-    volare enable --pdk sky130 --pdk-root /usr/share/local/ 0fe599b2afb6708d281543108caf8310912f54af
+
     # Copy SKY130 library
     echo "Copying SKY130 PDK........................."
 
     sudo mkdir -p /usr/share/local/
-    sudo mv /usr/share/local/volare/sky130/versions/0fe599b2afb6708d281543108caf8310912f54af/sky130A/libs.ref/sky130_fd_pr /usr/share/local/
-    rm -rf /usr/share/local/volare/
+    sudo mv sky130_fd_pr /usr/share/local/
 
     # Change ownership from root to the user
     sudo chown -R $USER:$USER /usr/share/local/sky130_fd_pr/
 
-}
-
-function installIhpPdk
-{
-    echo -n "Do you want to install IHP Open PDK for analog IC design? (y/n): "
-    read installIhp
-    
-    if [ "$installIhp" == "y" -o "$installIhp" == "Y" ]; then
-        echo "Installing IHP Open PDK........................"
-        
-        if [ -f "ihp/ihp-install-script.sh" ]; then
-            cd ihp/
-            chmod +x ihp-install-script.sh
-            trap "" ERR
-            ./ihp-install-script.sh --install
-            trap error_exit ERR
-            cd ../
-        else
-            echo "IHP install script not found. Skipping..."
-        fi
-    else
-        echo "Skipping IHP Open PDK installation"
-    fi
 }
 
 
@@ -137,7 +112,7 @@ function installKicad
     ubuntu_version=$(lsb_release -rs)
 
     # Define KiCad PPAs based on Ubuntu version
-    if [[ "$ubuntu_version" == "24.04" ]]; then
+    if [[ "$ubuntu_version" == "24.04" || "$ubuntu_version" == "25.04" ]]; then
         echo "Ubuntu 24.04 detected."
         kicadppa="kicad/kicad-8.0-releases"
 
@@ -158,7 +133,7 @@ function installKicad
                 fi
             else
                 echo "KiCad 8.0 is already installed."
-                exit 0
+                return 0
             fi
         fi
 
@@ -247,10 +222,6 @@ function installDependency
 
     echo "Installing PyQt5............."
     pip3 install PyQt5  
-
-    echo "Installing volare"
-    sudo apt-get xz-utils
-    pip3 install volare
 }
 
 
@@ -424,7 +395,6 @@ if [ $option == "--install" ];then
     copyKicadLibrary
     installNghdl
     installSky130Pdk
-    installIhpPdk
     createDesktopStartScript
 
     if [ $? -ne 0 ];then
@@ -454,14 +424,6 @@ elif [ $option == "--uninstall" ];then
 
         echo "Removing SKY130 PDK......................"
         sudo rm -R /usr/share/local/sky130_fd_pr
-
-        echo "Removing IHP Open PDK...................."
-        if [ -f "ihp/install-ihp-openpdk.sh" ]; then
-            cd ihp/
-            chmod +x install-ihp-openpdk.sh
-            ./install-ihp-openpdk.sh --uninstall
-            cd ../
-        fi
 
         echo "Removing NGHDL..........................."
         rm -rf library/modelParamXML/Nghdl/*
